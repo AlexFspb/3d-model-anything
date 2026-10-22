@@ -21,7 +21,7 @@
 
 ## Ближайшее действие
 
-Проверить регистрацию workflow Build personal iPhone IPA в Actions и запустить вручную, если push не создал запуск. На момент проверки 2026-10-22 около 18:00 UTC API возвращает 0 runs, страница workflow сообщает This workflow does not exist, хотя файл есть в main. Настройки разрешают Actions. На githubstatus.com отмечено Degraded Performance для Actions; связь с нашим симптомом вероятна, но не доказана. Не создавать дублирующие коммиты ради повторного запуска. После появления workflow проверить журнал, получить IPA и сверить хеш. Пользователь подтвердил обнаружение iPhone в iloader и прислал скриншот: USB, Selected, iOS 26.6.1. Подключение готово; Apple ID ещё не вводился. После получения IPA следующий шаг — вход пользователя в iloader и Import IPA.
+Продолжить диагностику регистрации Actions. Текущее имя workflow: Personal iPhone Release, файл .github/workflows/personal-iphone-release.yml. Проверить его появление и ручной запуск. Если он по-прежнему отсутствует, следующий диагностический шаг — минимальный workflow на ubuntu-latest, чтобы отделить общую регистрацию Actions от конфигурации iOS. На момент проверки 2026-10-22 около 18:00 UTC API возвращает 0 runs, страница workflow сообщает This workflow does not exist, хотя файл есть в main. Настройки разрешают Actions. На githubstatus.com отмечено Degraded Performance для Actions; связь с нашим симптомом вероятна, но не доказана. Не создавать дублирующие коммиты без конкретной диагностической гипотезы. После появления workflow проверить журнал, получить IPA и сверить хеш. Пользователь подтвердил обнаружение iPhone в iloader и прислал скриншот: USB, Selected, iOS 26.6.1. Подключение готово; Apple ID ещё не вводился. После получения IPA следующий шаг — вход пользователя в iloader и Import IPA.
 
 ## Принятые решения
 
@@ -82,6 +82,11 @@
 - 2026-10-22: задержка регистрации workflow; 0 runs и 0 checks. Общий сбой Actions подтверждён [официальным статусом GitHub](https://www.githubstatus.com/). Настройки репозитория уже разрешают Actions; права не расширяли.
 
 - 2026-10-22: пользователь подтвердил связь с iPhone; присланный скриншот iloader 2.4.0 показывает iPhone / USB / Selected и iOS 26.6.1. Поля Apple ID пусты. Сам скриншот в публичный форк не загружаем. Повторная проверка Actions: workflow всё ещё не зарегистрирован, API возвращает 0 runs.
+
+- 2026-10-22: по просьбе пользователя изучены обсуждения GitHub Community: [25219](https://github.com/orgs/community/discussions/25219) — workflow отсутствует при наличии в default branch; участникам помогало переименование файла и имени. Сообщения продолжались до 2026 года. Это опыт пользователей, не доказанный диагноз нашего форка. [50736](https://github.com/orgs/community/discussions/50736) — отдельное включение Actions для форка; в нашем форке уже выполнено.
+- 2026-10-22: проверен обратимый workaround: build-ios-ipa.yml переименован в personal-iphone-release.yml, имя изменено на Personal iPhone Release, фильтр paths обновлён. [Commit add6305](https://github.com/AlexFspb/3d-model-anything/commit/add6305ab834f1dc025d42c67c6279d1e06d59a4). Сразу после изменения workflow всё ещё отсутствует в Actions; успех не подтверждён.
+- 2026-10-22: actionlint v1.7.12 проверил исходный workflow: единственное замечание — неизвестный ему новый label xcode-27. Label подтверждён [официальным анонсом GitHub от 15.10.2026](https://github.blog/changelog/2026-10-15-xcode-27-runner-image-generally-available/); после исключения именно этого сообщения actionlint exit 0. Проверки ShellCheck/Pyflakes не запускались.
+- 2026-10-22: default branch main, fork=true, archived=false, disabled=false подтверждены API. Новый самостоятельный репозиторий для сборки не требуется; его создание пока не обосновано.
 
 ## Восстановление контекста
 
