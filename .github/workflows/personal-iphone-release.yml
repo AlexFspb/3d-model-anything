@@ -1,4 +1,4 @@
-name: Build personal iPhone IPA
+name: Personal iPhone Release
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     paths:
       - 'apps/house-capture/**'
       - '!apps/house-capture/**/*.md'
-      - '.github/workflows/build-ios-ipa.yml'
+      - '.github/workflows/personal-iphone-release.yml'
 
 permissions:
   contents: read
