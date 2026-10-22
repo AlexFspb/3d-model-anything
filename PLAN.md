@@ -16,12 +16,13 @@
 | Actions / Pages | Actions включены; Deploy viewer Disabled | Подтверждено через браузер |
 | Компоненты Apple | iTunes 12.13.11.1 и Apple Mobile Device Support 19.4.0.10 установлены | Служба Apple Mobile Device Service работает, автозапуск Automatic |
 | iloader | Установлен v2.4.0; iPhone обнаружен и выбран по USB | Подтверждено пользователем и скриншотом iloader (iOS 26.6.1) |
-| IPA | Пока не собран | Нужен запуск Actions |
+| Независимый тест Actions | Успешен в новом репозитории (не форке) | [Run 39829117555](https://github.com/AlexFspb/actions-test-20261022/actions/runs/39829117555), Success, 6 секунд |
+| IPA | Пока не собран | В исходном форке всё ещё 0 runs |
 | iPhone: установка / скан / экспорт / повторная подпись | Не проверены | Требуют IPA и участия пользователя |
 
 ## Ближайшее действие
 
-Продолжить диагностику регистрации Actions. Текущее имя workflow: Personal iPhone Release, файл .github/workflows/personal-iphone-release.yml. Проверить его появление и ручной запуск. Добавлен минимальный workflow Actions registration check на ubuntu-latest: .github/workflows/actions-registration-check.yml. Он также пока не появился в списке Actions; API возвращает 0 runs. Следующий шаг — проверить регистрацию обоих workflows после обработки обновлений GitHub; если отсутствие сохраняется, проверить диагностику/уведомления аккаунта и готовить обращение в GitHub Support с коммитами и этим минимальным примером. Не считать ожидание гарантированным исправлением и не пересоздавать репозиторий без доказательств. На момент проверки 2026-10-22 около 18:00 UTC API возвращает 0 runs, страница workflow сообщает This workflow does not exist, хотя файл есть в main. Настройки разрешают Actions. На githubstatus.com отмечено Degraded Performance для Actions; связь с нашим симптомом вероятна, но не доказана. Не создавать дублирующие коммиты без конкретной диагностической гипотезы. После появления workflow проверить журнал, получить IPA и сверить хеш. Пользователь подтвердил обнаружение iPhone в iloader и прислал скриншот: USB, Selected, iOS 26.6.1. Подключение готово; Apple ID ещё не вводился. После получения IPA следующий шаг — вход пользователя в iloader и Import IPA.
+Отдельный минимальный публичный репозиторий actions-test-20261022 успешно выполнил Actions test на ubuntu-latest. [Успешный запуск](https://github.com/AlexFspb/actions-test-20261022/actions/runs/39829117555), commit 2dba31b6cc87bdb12a94dfd6ab159c11f213bacd. В исходном форке всё ещё 0 runs. Следующий шаг — сравнить и восстановить регистрацию Actions в форке; общий запрет Actions для аккаунта опровергнут этим успешным тестом, но точная причина форка пока неизвестна. Новый тестовый репозиторий содержит только README и .github/workflows/test.yml, не используется для исходников приложения. Перенос приложения в другой репозиторий пока не выполнен. После успешной iOS-сборки получить IPA, проверить его и продолжить установку через Import IPA. iPhone уже обнаружен по USB в iloader; Apple ID пользователь ещё не вводил.
 
 ## Принятые решения
 
@@ -89,6 +90,9 @@
 - 2026-10-22: default branch main, fork=true, archived=false, disabled=false подтверждены API. Новый самостоятельный репозиторий для сборки не требуется; его создание пока не обосновано.
 
 - 2026-10-22: добавлен минимальный Actions registration check: ubuntu-latest, одна команда echo, permissions {}, timeout 2 минуты, dispatch и push только собственного файла. actionlint v1.7.12 exit 0. [Commit f1a3e85](https://github.com/AlexFspb/3d-model-anything/commit/f1a3e85b904791b205ecf1d918710e2ed403e5a5). Файл подтверждён API, но новый workflow отсутствует в Actions, runs=0. Это показывает, что симптом возникает до сборки iOS; первопричина регистрации/аккаунта/сервиса пока не установлена. После диагностики этот временный workflow следует убрать.
+
+- 2026-10-22, 20:11 Europe/Berlin: по явной просьбе пользователя создан самостоятельный публичный [actions-test-20261022](https://github.com/AlexFspb/actions-test-20261022), fork=false подтверждён API. Ровно 2 файла: README.md и .github/workflows/test.yml. Workflow: on push/workflow_dispatch, permissions {}, ubuntu-latest, timeout 2 минуты, одна команда echo. actionlint exit 0.
+- 2026-10-22: тестовый [commit 2dba31b](https://github.com/AlexFspb/actions-test-20261022/commit/2dba31b6cc87bdb12a94dfd6ab159c11f213bacd) создал [run 39829117555](https://github.com/AlexFspb/actions-test-20261022/actions/runs/39829117555). Итог Success, общая длительность 6 секунд. Job 120000223360, Ubuntu 24.04.5, runner image 20261012.334.1. Лог содержит GitHub Actions works. API и браузер подтвердили успех. В исходном форке одновременно API показывает 0 runs. Ограничение всего аккаунта не подтверждается; проблема локализована до исходного форка/его регистрации, точная причина не установлена.
 
 ## Восстановление контекста
 
