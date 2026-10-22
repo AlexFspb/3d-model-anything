@@ -15,13 +15,13 @@
 | Workflow | Опубликован; YAML/Python проверены, удалённый файл совпал с подготовленным | [Commit c2b63d4](https://github.com/AlexFspb/3d-model-anything/commit/c2b63d433c2801ad332c931b0b2c84c44a146864) |
 | Actions / Pages | Actions включены; Deploy viewer Disabled | Подтверждено через браузер |
 | Компоненты Apple | iTunes 12.13.11.1 и Apple Mobile Device Support 19.4.0.10 установлены | Служба Apple Mobile Device Service работает, автозапуск Automatic |
-| iloader | Установлен v2.4.0 на Windows | MSI exit 0; версия подтверждена реестром |
+| iloader | Установлен v2.4.0; iPhone обнаружен и выбран по USB | Подтверждено пользователем и скриншотом iloader (iOS 26.6.1) |
 | IPA | Пока не собран | Нужен запуск Actions |
 | iPhone: установка / скан / экспорт / повторная подпись | Не проверены | Требуют IPA и участия пользователя |
 
 ## Ближайшее действие
 
-Проверить регистрацию workflow Build personal iPhone IPA в Actions и запустить вручную, если push не создал запуск. На момент проверки 2026-10-22 около 18:00 UTC API возвращает 0 runs, страница workflow сообщает This workflow does not exist, хотя файл есть в main. Настройки разрешают Actions. На githubstatus.com отмечено Degraded Performance для Actions; связь с нашим симптомом вероятна, но не доказана. Не создавать дублирующие коммиты ради повторного запуска. После появления workflow проверить журнал, получить IPA и сверить хеш. Пользователю предложено подключить iPhone и проверить обнаружение в iloader; ответа пока нет.
+Проверить регистрацию workflow Build personal iPhone IPA в Actions и запустить вручную, если push не создал запуск. На момент проверки 2026-10-22 около 18:00 UTC API возвращает 0 runs, страница workflow сообщает This workflow does not exist, хотя файл есть в main. Настройки разрешают Actions. На githubstatus.com отмечено Degraded Performance для Actions; связь с нашим симптомом вероятна, но не доказана. Не создавать дублирующие коммиты ради повторного запуска. После появления workflow проверить журнал, получить IPA и сверить хеш. Пользователь подтвердил обнаружение iPhone в iloader и прислал скриншот: USB, Selected, iOS 26.6.1. Подключение готово; Apple ID ещё не вводился. После получения IPA следующий шаг — вход пользователя в iloader и Import IPA.
 
 ## Принятые решения
 
@@ -54,7 +54,7 @@
 - [x] GitHub Pages не публикуется автоматически из форка.
 - [x] iloader установлен на Windows.
 - [x] Компоненты Apple установлены, служба связи работает.
-- [ ] Фактическая связь с iPhone подтверждена в iloader.
+- [x] Фактическая связь с iPhone подтверждена в iloader.
 - [ ] Приложение запускается на iPhone 16 Pro / iOS 26.6.1.
 - [ ] Комната сканируется, сохраняется и открывается повторно.
 - [ ] ZIP читается на Windows: есть manifest.json, RoomPlan/layout, PLY mesh, фотографии и их позы/параметры камеры. Depth/confidence проверяются при наличии и перечислении в манифесте; отсутствие отдельно фиксируется.
@@ -80,6 +80,8 @@
 - 2026-10-22: iTunes 12.13.11.1 установлен через winget Apple.iTunes из secure-appldnld.apple.com. Хеш проверен winget. Служба AMDS при этом отсутствовала.
 - 2026-10-22: отдельно установлен Apple.AppleMobileDeviceSupport 19.4.0.10 из swcdn.apple.com, SHA-256 b60533fb54e7bd81ffc52d99678a9cce04e58cb54a76281bd7b1309f20d360e9. Установка успешна; служба Running/Automatic.
 - 2026-10-22: задержка регистрации workflow; 0 runs и 0 checks. Общий сбой Actions подтверждён [официальным статусом GitHub](https://www.githubstatus.com/). Настройки репозитория уже разрешают Actions; права не расширяли.
+
+- 2026-10-22: пользователь подтвердил связь с iPhone; присланный скриншот iloader 2.4.0 показывает iPhone / USB / Selected и iOS 26.6.1. Поля Apple ID пусты. Сам скриншот в публичный форк не загружаем. Повторная проверка Actions: workflow всё ещё не зарегистрирован, API возвращает 0 runs.
 
 ## Восстановление контекста
 
