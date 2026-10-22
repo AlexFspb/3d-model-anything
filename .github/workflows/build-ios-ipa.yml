@@ -1,0 +1,143 @@
+name: Build personal iPhone IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/house-capture/**'
+      - '!apps/house-capture/**/*.md'
+      - '.github/workflows/build-ios-ipa.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-iphone-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.0.app/Contents/Developer
+      BUNDLE_ID: io.github.alexfspb.housecapture
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Prepare build tools
+        run: |
+          set -euo pipefail
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
+          xcodebuild -version | grep -Eq '^Xcode 27\.0$'
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+          mkdir -p "$RUNNER_TEMP/housecapture-logs" "$RUNNER_TEMP/housecapture-delivery"
+
+      - name: Generate project
+        working-directory: apps/house-capture
+        run: xcodegen generate --spec project.yml
+
+      - name: Build unsigned Release for iPhone
+        working-directory: apps/house-capture
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project HouseCapture.xcodeproj \
+            -scheme HouseCapture \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/housecapture-build" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/housecapture-logs/xcodebuild.log"
+
+      - name: Validate app and package IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/housecapture-build/Build/Products/Release-iphoneos/HouseCapture.app"
+          test -d "$APP"
+          plutil -lint "$APP/Info.plist"
+          test "$(plutil -extract CFBundleIdentifier raw -o - "$APP/Info.plist")" = "$BUNDLE_ID"
+          EXECUTABLE="$(plutil -extract CFBundleExecutable raw -o - "$APP/Info.plist")"
+          test "$(lipo -archs "$APP/$EXECUTABLE")" = arm64
+          xcrun vtool -show-build "$APP/$EXECUTABLE" | tee "$RUNNER_TEMP/housecapture-logs/macho-build.txt"
+          grep -Eq 'platform[[:space:]]+(IOS|2)([[:space:]]|$)' "$RUNNER_TEMP/housecapture-logs/macho-build.txt"
+          mkdir -p "$RUNNER_TEMP/housecapture-package/Payload"
+          ditto "$APP" "$RUNNER_TEMP/housecapture-package/Payload/HouseCapture.app"
+          cd "$RUNNER_TEMP/housecapture-package"
+          /usr/bin/zip -qry "$RUNNER_TEMP/housecapture-delivery/HouseCapture-unsigned.ipa" Payload
+          python3 - <<'PY'
+          import datetime, hashlib, json, os, pathlib, plistlib, subprocess, zipfile
+          delivery = pathlib.Path(os.environ['RUNNER_TEMP']) / 'housecapture-delivery'
+          ipa = delivery / 'HouseCapture-unsigned.ipa'
+          with zipfile.ZipFile(ipa) as archive:
+              assert archive.testzip() is None, 'Damaged IPA'
+              info = plistlib.loads(archive.read('Payload/HouseCapture.app/Info.plist'))
+              assert info['CFBundleIdentifier'] == os.environ['BUNDLE_ID']
+              assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS']
+              assert 'Payload/HouseCapture.app/' + info['CFBundleExecutable'] in archive.namelist()
+          digest = hashlib.sha256(ipa.read_bytes()).hexdigest()
+          (delivery / 'SHA256SUMS').write_text(f'{digest}  {ipa.name}\n', encoding='utf-8')
+          def command(*args):
+              return subprocess.check_output(args, text=True).strip()
+          metadata = {
+              'repository': os.environ['GITHUB_REPOSITORY'],
+              'commit': os.environ['GITHUB_SHA'],
+              'run_url': f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              'run_attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'built_at_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'runner_image': os.environ.get('ImageOS'),
+              'runner_image_version': os.environ.get('ImageVersion'),
+              'macos': command('sw_vers'),
+              'xcode': command('xcodebuild', '-version'),
+              'xcodegen': command('xcodegen', '--version'),
+              'sdk': command('xcrun', '--sdk', 'iphoneos', '--show-sdk-version'),
+              'configuration': 'Release', 'architecture': 'arm64',
+              'platform': 'iPhoneOS', 'signed': False,
+              'bundle_id': info['CFBundleIdentifier'],
+              'minimum_ios': info['MinimumOSVersion'],
+              'app_version': info['CFBundleShortVersionString'],
+              'app_build': info['CFBundleVersion'],
+              'ipa': ipa.name, 'ipa_bytes': ipa.stat().st_size, 'sha256': digest,
+          }
+          (delivery / 'build-info.json').write_text(json.dumps(metadata, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(metadata, indent=2))
+          PY
+          cd "$RUNNER_TEMP/housecapture-delivery"
+          shasum -a 256 -c SHA256SUMS
+
+      - name: Upload IPA, checksum and provenance
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: HouseCapture-unsigned-${{ github.run_number }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/housecapture-delivery/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload build diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: HouseCapture-build-diagnostics-${{ github.run_number }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/housecapture-logs/
+          if-no-files-found: ignore
+          retention-days: 7
